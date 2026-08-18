@@ -1,0 +1,18 @@
+homepage: https://www.wisedataconsent.com
+documentation: https://github.com/wisedatabusiness/wisedata-consent-template-gtm#readme
+
+# Cada versão publicada na galeria é um COMMIT desta lista, identificado pelo
+# SHA. O Google não lê a branch: ele lê o que está aqui.
+#
+# Publicar uma versão nova = fazer o commit, copiar o SHA e acrescentar uma
+# entrada abaixo. Some em 2 a 3 dias na galeria. Remover uma entrada é a forma de
+# despublicar uma versão que saiu com defeito — o commit continua no histórico,
+# mas ninguém mais o instala.
+versions:
+- sha: 3cd00e0c6f34f626e1c317034c32471eaf4e7658
+  changeNotes: |
+    Primeira versão.
+
+    Carrega o WiseData Consent pelo Tag Manager, sem tocar no código do site:
+    nega os sete sinais do Consent Mode v2 antes de qualquer tag disparar,
+    injeta o SDK e repassa a decisão do visitante ao container.

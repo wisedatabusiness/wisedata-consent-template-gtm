@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="WiseData Consent">
+<title>WiseData Consent</title>
+  <path d="M12 0H60L96 36V84Q96 96 84 96H12Q0 96 0 84V12Q0 0 12 0Z" fill="#020A48"/>
+  <path d="M28 46L41 59L69 27" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="square" stroke-linejoin="miter"/>
+  <rect x="28" y="71.5" width="40" height="9" rx="1.5" fill="#F59E0B"/>
+</svg>
