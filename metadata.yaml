@@ -9,7 +9,7 @@ documentation: https://github.com/wisedatabusiness/wisedata-consent-template-gtm
 # despublicar uma versão que saiu com defeito — o commit continua no histórico,
 # mas ninguém mais o instala.
 versions:
-- sha: 3cd00e0c6f34f626e1c317034c32471eaf4e7658
+- sha: ba9a7f66f9fcfddd3d847af38ba07e3dc10a6b02
   changeNotes: |
     Primeira versão.
 
