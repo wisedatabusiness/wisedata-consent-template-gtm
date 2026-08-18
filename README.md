@@ -40,8 +40,11 @@ alheio e passar a receber consentimentos assinados em nome do dono.
 | Campo | Obrigatório | O que faz |
 |---|---|---|
 | **Identificador do site** | sim | Os 26 caracteres do painel |
-| **Endereço da borda** | não | Só mude se o suporte pedir |
 | **Tempo de espera pela decisão** | não | Quanto o container segura as tags à espera da resposta. Padrão: 500 ms |
+
+O endereço de onde o SDK é carregado **não é configurável**, de propósito: a
+permissão `inject_script` declara um único host, e nem o container nem quem o
+administra têm como apontar o carregamento para outro lugar.
 
 ## O que o template faz, em ordem
 
@@ -69,6 +72,36 @@ campanha sem atribuição, sem nada indicando a causa.
 **Não bloqueia scripts.** Bloqueio é declarativo, marcado item a item no painel:
 *descubra automaticamente, bloqueie deliberadamente*. Bloqueio por heurística
 vende bem, dá suporte ruim e quebra site.
+
+## Segurança
+
+As permissões declaradas são o contrato do template, e este pede o mínimo:
+
+| Permissão | Escopo pedido |
+|---|---|
+| `inject_script` | **Um host só**: `https://consent.wisedataconsent.com/`. Sem curinga de subdomínio |
+| `access_consent` | **Escrita** nos sete sinais e em `wait_for_update`. Nenhuma leitura |
+| `access_globals` | **Execução** de `WDConsent.get` e `WDConsent.onChange`. Sem leitura, sem escrita |
+| `logging` | Apenas no ambiente de depuração |
+
+O que ele **não** pede, e por isso não pode fazer: ler ou gravar cookies, ler o
+`dataLayer`, enviar pixel, acessar `localStorage`, ler a URL da página ou
+escrever qualquer variável global.
+
+**Os sete sinais são declarados explicitamente, e há teste travando isso.**
+Sinal omitido do padrão é tratado pelo Tag Manager como *concedido* — foi um dos
+achados do estudo [*Google Tag Manager: Hidden Data Leaks and its Potential
+Violations under EU Data Protection Law*](https://arxiv.org/abs/2312.08806)
+(arXiv 2312.08806), que também encontrou onze tags injetando script arbitrário
+sem ter a permissão para isso. Esquecer uma linha na declaração não produz erro:
+produz coleta sem consentimento, no site do cliente, sem nada indicando a causa.
+
+**O identificador é conferido em tempo de execução**, e não apenas pelo
+validador do formulário. Campos de texto aceitam variáveis do container, e o
+valor resolvido nunca passa pelos validadores da interface.
+
+Encontrou algo? Abra uma issue neste repositório. Se for sensível, escreva para
+`seguranca@wisedatabusiness.com.br` antes de publicar.
 
 ## Se o SDK não carregar
 

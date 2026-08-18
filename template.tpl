@@ -61,19 +61,6 @@ ___TEMPLATE_PARAMETERS___
     "subParams": [
       {
         "type": "TEXT",
-        "name": "cdnBaseUrl",
-        "displayName": "Endereço da borda",
-        "simpleValueType": true,
-        "defaultValue": "https://consent.wisedataconsent.com",
-        "help": "Só mude se o suporte do WiseData Consent pedir. É de onde o SDK é servido, e o endereço precisa estar na lista de permissões deste template.",
-        "valueValidators": [
-          {
-            "type": "NON_EMPTY"
-          }
-        ]
-      },
-      {
-        "type": "TEXT",
         "name": "waitForUpdate",
         "displayName": "Tempo de espera pela decisão (ms)",
         "simpleValueType": true,
@@ -115,8 +102,22 @@ const injectScript = require('injectScript');
 const callInWindow = require('callInWindow');
 const log = require('logToConsole');
 
+/*
+ * A borda é FIXA, e não um campo.
+ *
+ * Ela já foi configurável. O campo servia a um caso de suporte raro e custava
+ * caro: a permissão `inject_script` precisava aceitar um curinga de subdomínio
+ * para o campo ter serventia, e curinga é o oposto do que essa permissão existe
+ * para fazer. Com o endereço aqui, a permissão declara UM host e o container do
+ * cliente não tem como apontar o carregamento para outro lugar — nem por
+ * engano, nem por container comprometido.
+ */
+const BASE = 'https://consent.wisedataconsent.com';
+
+/** Crockford base32, sem I, L, O nem U. É o alfabeto do ULID. */
+const ULID = '^[0-9A-HJKMNP-TV-Z]{26}$';
+
 const ulid = data.siteUlid;
-const base = data.cdnBaseUrl || 'https://consent.wisedataconsent.com';
 const espera = data.waitForUpdate || 500;
 
 /*
@@ -193,7 +194,26 @@ const aoFalhar = () => {
   data.gtmOnSuccess();
 };
 
-injectScript(base + '/c/' + ulid + '.js', aoCarregar, aoFalhar, 'wisedata_consent');
+/*
+ * O identificador é conferido AQUI, e não só no formulário.
+ *
+ * Os `valueValidators` do campo rodam na interface do Tag Manager, sobre o que
+ * a pessoa digita. Campos de texto aceitam variáveis do container, e o valor
+ * resolvido em tempo de execução nunca passa por eles — uma variável que
+ * devolvesse `../../qualquer/coisa` viraria caminho na URL do carregamento.
+ *
+ * A permissão de injeção já tranca o HOST, então o pior caso seria um caminho
+ * inexistente no nosso próprio domínio. Ainda assim se confere: a checagem é uma
+ * linha, e o que ela evita é o template pedir à borda uma URL que ninguém
+ * escreveu.
+ */
+if (!ulid || !ulid.match(ULID)) {
+  log('WiseData Consent: identificador de site inválido. O consentimento segue negado.');
+
+  data.gtmOnSuccess();
+} else {
+  injectScript(BASE + '/c/' + ulid + '.js', aoCarregar, aoFalhar, 'wisedata_consent');
+}
 
 
 ___WEB_PERMISSIONS___
@@ -484,10 +504,6 @@ ___WEB_PERMISSIONS___
               {
                 "type": 1,
                 "string": "https://consent.wisedataconsent.com/"
-              },
-              {
-                "type": 1,
-                "string": "https://*.wisedataconsent.com/"
               }
             ]
           }
@@ -645,6 +661,67 @@ scenarios:
     assertThat(padrao.analytics_storage).isEqualTo('denied');
     assertThat(padrao.functionality_storage).isEqualTo('denied');
     assertThat(padrao.personalization_storage).isEqualTo('denied');
+- name: nenhum sinal fica de fora da declaracao
+  code: |-
+    // Sinal OMITIDO do padrão é tratado pelo Tag Manager como CONCEDIDO — foi
+    // um dos achados do estudo "Google Tag Manager: Hidden Data Leaks" (arXiv
+    // 2312.08806). Esquecer uma linha acima não produz erro: produz coleta sem
+    // consentimento, no site do cliente, sem nada indicando a causa.
+    let padrao = null;
+
+    mock('setDefaultConsentState', (estado) => {
+      padrao = estado;
+    });
+
+    runCode(mockData);
+
+    const sinais = [
+      'ad_storage',
+      'ad_user_data',
+      'ad_personalization',
+      'analytics_storage',
+      'functionality_storage',
+      'personalization_storage',
+      'security_storage'
+    ];
+
+    for (let i = 0; i < sinais.length; i++) {
+      assertThat(padrao[sinais[i]]).isDefined();
+    }
+- name: identificador invalido nao vira caminho na URL
+  code: |-
+    // Os validadores do campo rodam na INTERFACE. Campos de texto aceitam
+    // variáveis do container, e o valor resolvido em execução nunca passa por
+    // eles.
+    let carregou = false;
+    let sucesso = false;
+
+    mock('injectScript', () => {
+      carregou = true;
+    });
+
+    mockData.siteUlid = '../../qualquer/coisa';
+    mockData.gtmOnSuccess = () => {
+      sucesso = true;
+    };
+
+    runCode(mockData);
+
+    assertThat(carregou).isEqualTo(false);
+    assertThat(sucesso).isEqualTo(true);
+- name: identificador vazio nao carrega nada
+  code: |-
+    let carregou = false;
+
+    mock('injectScript', () => {
+      carregou = true;
+    });
+
+    mockData.siteUlid = '';
+
+    runCode(mockData);
+
+    assertThat(carregou).isEqualTo(false);
 - name: security_storage e a unica excecao concedida
   code: |-
     let padrao = null;
@@ -736,7 +813,6 @@ scenarios:
 setup: |-
   const mockData = {
     siteUlid: '01M05GY8AE80X7AD15S5H1QWZ6',
-    cdnBaseUrl: 'https://consent.wisedataconsent.com',
     waitForUpdate: 500,
     gtmOnSuccess: () => {},
     gtmOnFailure: () => {}
