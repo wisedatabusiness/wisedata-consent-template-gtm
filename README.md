@@ -1,4 +1,9 @@
-<img src="marca/simbolo.svg" width="72" alt="WiseData Consent">
+<!-- Duas versões, trocadas pelo tema de quem lê: o logotipo padrão é escuro e
+     sumiria no GitHub em modo escuro, que é como a maioria o abre. -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="marca/logotipo-horizontal-branco.svg">
+  <img src="marca/logotipo-horizontal.svg" width="300" alt="WiseData Consent">
+</picture>
 
 # WiseData Consent — template para o Google Tag Manager
 
