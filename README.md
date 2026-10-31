@@ -61,6 +61,34 @@ administra têm como apontar o carregamento para outro lugar.
    também na chegada, para quem já havia decidido em visita anterior e não
    dispara evento nenhum.
 
+## Disparar a tag na hora do aceite
+
+Repassar a decisão libera as tags, mas **não as dispara**: o Tag Manager só
+avalia uma tag quando um acionador acontece, e o *All Pages* já passou quando o
+visitante clica em "Aceitar". Sem mais nada, o PageView do Meta e a gravação do
+Clarity começam só na página seguinte.
+
+Para dispará-las no clique, o SDK empurra um evento no `dataLayer`:
+
+```js
+{
+  event: 'wd_consent_update',
+  wd_consent_categories: ['necessary', 'analytics', 'marketing'], // o que vale agora
+  wd_consent_new: ['analytics', 'marketing'],                      // o que foi liberado neste clique
+}
+```
+
+1. **Variáveis → Nova → Variável da camada de dados**, nome `wd_consent_new`.
+2. **Acionadores → Novo → Evento personalizado**, nome do evento
+   `wd_consent_update`, disparando em *Alguns eventos personalizados* quando
+   `wd_consent_new` **contém** `marketing` (para Meta, Google Ads) ou
+   `analytics` (para Clarity, Hotjar).
+3. Acrescente esse acionador às tags, **mantendo** o *All Pages*.
+
+O evento só sai quando alguma categoria foi liberada **naquele clique**. Quem
+salva a mesma escolha de novo, ou quem já tinha decidido em visita anterior, não
+o recebe — senão o PageView contaria duas vezes. Recusar também não o dispara.
+
 ## O que ele deliberadamente NÃO faz
 
 **Não oferece padrões por região.** O regime aplicado — LGPD, GDPR ou o
